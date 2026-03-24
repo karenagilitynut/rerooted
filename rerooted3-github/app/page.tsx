@@ -7,6 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Heart, Sparkles, Shield, Chrome as Home, ClipboardList, ChartBar as BarChart3, User, BookOpen, ArrowLeft } from 'lucide-react';
+import ResultsPage from '@/components/ResultsPage';
+import ActionPlanPage from '@/components/ActionPlanPage';
+import CheckInPage, { CheckInResponses } from '@/components/CheckInPage';
+import ProgressPage from '@/components/ProgressPage';
+import ConnectionRitualsPage from '@/components/ConnectionRitualsPage';
+import { createClient } from '@supabase/supabase-js';
 
 const attachmentQuestions = [
   {
@@ -114,28 +120,24 @@ const attachmentQuestions = [
 const ritualsByType = {
   anxious: {
     label: "Anxious-Leaning",
-    path: "Rekindle",
     tone: "Your system does best with reassurance, steadiness, and clear signs of being chosen.",
     ritual: "Send one clean bid for connection, then take a 90-second body anchor before checking for a response.",
     rep: "Name one thing that is true without mind-reading.",
   },
   avoidant: {
     label: "Dismissive-Leaning",
-    path: "Ignite",
     tone: "Your system protects through space, self-containment, and lowering emotional intensity.",
     ritual: "Stay in shared space for 3 quiet minutes without needing to perform closeness.",
     rep: "Offer one low-pressure signal of warmth without opening a big conversation.",
   },
   fearful: {
     label: "Fearful-Avoidant",
-    path: "Rekindle",
     tone: "Your system longs for closeness and braces for pain at the same time.",
     ritual: "Do a co-regulation sit: feet on floor, one hand on your own body, one point of gentle contact if available.",
     rep: "Practice naming both truths: what you want and what feels scary.",
   },
   secure: {
     label: "Secure-Leaning",
-    path: "Ignite",
     tone: "Your system has more room for repair, directness, and mutual regulation.",
     ritual: "Do a 5-minute appreciation and desire check-in with one honest sentence each.",
     rep: "Lead one repair bid or connection ritual today.",
@@ -656,6 +658,11 @@ const navItems = [
   { id: 'profile', label: 'Profile', icon: User },
 ];
 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
 export default function ReRootedApp() {
   const [screen, setScreen] = useState('home');
   const [quizIndex, setQuizIndex] = useState(0);
@@ -690,7 +697,7 @@ export default function ReRootedApp() {
     if (quizIndex < attachmentQuestions.length - 1) {
       setQuizIndex(quizIndex + 1);
     } else {
-      setScreen('dashboard');
+      setScreen('results');
     }
   };
 
@@ -705,8 +712,26 @@ export default function ReRootedApp() {
     setScreen('learn');
   };
 
+  const handleCheckInComplete = async (responses: CheckInResponses) => {
+    try {
+      await supabase.from('checkins').insert({
+        attachment_type: responses.attachmentType,
+        date: responses.date,
+        trigger: responses.trigger,
+        core_story: responses.coreStory,
+        reframe: responses.reframe,
+        identity_shift: responses.identityShift,
+        completed_at: responses.date
+      });
+      setScreen('dashboard');
+    } catch (error) {
+      console.error('Error saving check-in:', error);
+      setScreen('dashboard');
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-stone-50 text-stone-900">
+    <div className="min-h-screen bg-[#F5F1E8] text-[#2E2A26]">
       <div className="mx-auto flex min-h-screen max-w-md flex-col px-5 pb-28 pt-4 sm:pt-6">
         <AnimatePresence mode="wait">
           {screen === 'home' && (
@@ -717,27 +742,33 @@ export default function ReRootedApp() {
               exit={{ opacity: 0, y: -12 }}
               className="flex-1 space-y-5"
             >
-              <div className="rounded-[28px] bg-gradient-to-b from-white to-stone-100 p-6 sm:p-8 shadow-sm">
-                <Badge className="mb-4 rounded-full bg-stone-900 px-4 py-1.5 text-sm text-stone-50 hover:bg-stone-900">
+              <div className="text-center py-3">
+                <p className="text-lg sm:text-xl text-[#7A8F7B] font-medium tracking-wide">
+                  You're not behind. You're becoming.
+                </p>
+              </div>
+
+              <div className="rounded-[32px] bg-gradient-to-br from-[#E8E1D5] to-[#F5F1E8] p-6 sm:p-8 shadow-lg border border-[#D8D2C8]">
+                <Badge className="mb-4 rounded-full bg-[#7A8F7B] px-4 py-1.5 text-sm text-white hover:bg-[#7A8F7B]">
                   Nervous-system safe relationship growth
                 </Badge>
-                <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight">
+                <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight text-[#2E2A26]">
                   ReRooted
                 </h1>
-                <p className="mt-4 text-base sm:text-lg leading-7 text-stone-600">
+                <p className="mt-4 text-base sm:text-lg leading-relaxed text-[#2E2A26]/80">
                   Rebuild connection through emotional safety, structured
                   intimacy, and repair that your body can actually trust.
                 </p>
                 <div className="mt-7 grid grid-cols-1 gap-3">
                   <Button
-                    className="h-14 rounded-2xl text-base font-medium shadow-sm active:scale-[0.98] transition-transform"
+                    className="h-14 rounded-3xl text-base font-medium shadow-md active:scale-[0.98] transition-all bg-[#7A8F7B] hover:bg-[#6B7E6C] text-white"
                     onClick={() => setScreen('quiz')}
                   >
                     Start attachment quiz
                   </Button>
                   <Button
                     variant="outline"
-                    className="h-14 rounded-2xl text-base font-medium active:scale-[0.98] transition-transform"
+                    className="h-14 rounded-3xl text-base font-medium active:scale-[0.98] transition-all border-2 border-[#D8D2C8] hover:bg-[#E8E1D5] text-[#2E2A26]"
                     onClick={() => setScreen('dashboard')}
                   >
                     Preview dashboard
@@ -746,44 +777,56 @@ export default function ReRootedApp() {
               </div>
 
               <div className="grid gap-3">
-                <Card className="rounded-3xl border-none shadow-sm active:scale-[0.98] transition-transform cursor-pointer">
+                <Card
+                  className="rounded-[28px] border border-[#D8D2C8] shadow-sm active:scale-[0.98] transition-transform cursor-pointer bg-white"
+                  onClick={() => {
+                    if (Object.keys(answers).length === attachmentQuestions.length) {
+                      setScreen('results');
+                    } else {
+                      setScreen('quiz');
+                    }
+                  }}
+                >
                   <CardContent className="flex items-start gap-4 p-6">
-                    <div className="rounded-2xl bg-stone-100 p-3">
-                      <Shield className="h-5 w-5" />
+                    <div className="rounded-2xl bg-[#7A8F7B]/10 p-3">
+                      <Shield className="h-5 w-5 text-[#7A8F7B]" />
                     </div>
                     <div className="flex-1">
-                      <p className="font-semibold text-base mb-1">Attachment-aware</p>
-                      <p className="text-sm leading-6 text-stone-600">
-                        Understand your protection patterns before trying to fix
-                        the relationship.
+                      <p className="font-semibold text-base mb-1 text-[#2E2A26]">Your Pattern</p>
+                      <p className="text-sm leading-relaxed text-[#2E2A26]/70">
+                        Understand how you protect, connect, and pull away
                       </p>
                     </div>
                   </CardContent>
                 </Card>
-                <Card className="rounded-3xl border-none shadow-sm active:scale-[0.98] transition-transform cursor-pointer">
+                <Card
+                  className="rounded-[28px] border border-[#D8D2C8] shadow-sm active:scale-[0.98] transition-transform cursor-pointer bg-white"
+                  onClick={() => setScreen('rituals')}
+                >
                   <CardContent className="flex items-start gap-4 p-6">
-                    <div className="rounded-2xl bg-stone-100 p-3">
-                      <Heart className="h-5 w-5" />
+                    <div className="rounded-2xl bg-[#C47A5A]/10 p-3">
+                      <Heart className="h-5 w-5 text-[#C47A5A]" />
                     </div>
                     <div className="flex-1">
-                      <p className="font-semibold text-base mb-1">Intimacy you can build</p>
-                      <p className="text-sm leading-6 text-stone-600">
-                        Move from pressure and shutdown into safety, desire, and
-                        mutual connection.
+                      <p className="font-semibold text-base mb-1 text-[#2E2A26]">Connection Rituals</p>
+                      <p className="text-sm leading-relaxed text-[#2E2A26]/70">
+                        Tonight's practice designed for your nervous system
                       </p>
                     </div>
                   </CardContent>
                 </Card>
-                <Card className="rounded-3xl border-none shadow-sm active:scale-[0.98] transition-transform cursor-pointer">
+                <Card
+                  className="rounded-[28px] border border-[#D8D2C8] shadow-sm active:scale-[0.98] transition-transform cursor-pointer bg-white"
+                  onClick={() => setScreen('checkin')}
+                >
                   <CardContent className="flex items-start gap-4 p-6">
-                    <div className="rounded-2xl bg-stone-100 p-3">
-                      <Sparkles className="h-5 w-5" />
+                    <div className="rounded-2xl bg-[#7A8F7B]/10 p-3">
+                      <Sparkles className="h-5 w-5 text-[#7A8F7B]" />
                     </div>
                     <div className="flex-1">
-                      <p className="font-semibold text-base mb-1">Personalized path</p>
-                      <p className="text-sm leading-6 text-stone-600">
-                        Route into Rekindle or Ignite with practices matched to
-                        your nervous system.
+                      <p className="font-semibold text-base mb-1 text-[#2E2A26]">Daily Check-In</p>
+                      <p className="text-sm leading-relaxed text-[#2E2A26]/70">
+                        Understand what happened today and what your system needed
                       </p>
                     </div>
                   </CardContent>
@@ -850,22 +893,26 @@ export default function ReRootedApp() {
                 <h2 className="mt-3 text-3xl sm:text-4xl font-semibold">
                   {result.config.label}
                 </h2>
-                <div className="mt-4 flex items-center gap-2">
-                  <Badge className="rounded-full bg-stone-50 text-stone-900 hover:bg-stone-50 px-4 py-1.5 text-sm font-medium">
-                    {result.config.path} Path
-                  </Badge>
-                </div>
                 <p className="mt-5 text-base leading-7 text-stone-300">
                   {result.config.tone}
                 </p>
-                <Button
-                  variant="outline"
-                  className="mt-6 h-12 w-full rounded-2xl border-2 border-stone-700 bg-transparent text-stone-50 hover:bg-stone-800 hover:text-stone-50 active:scale-[0.98] transition-transform font-medium"
-                  onClick={() => openEducation(result.topType as 'anxious' | 'avoidant' | 'fearful' | 'secure')}
-                >
-                  <BookOpen className="mr-2 h-5 w-5" />
-                  Learn this pattern
-                </Button>
+                <div className="mt-6 grid grid-cols-1 gap-3">
+                  <Button
+                    variant="outline"
+                    className="h-12 w-full rounded-2xl border-2 border-stone-700 bg-transparent text-stone-50 hover:bg-stone-800 hover:text-stone-50 active:scale-[0.98] transition-transform font-medium"
+                    onClick={() => setScreen('results')}
+                  >
+                    View full results
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-12 w-full rounded-2xl border-2 border-stone-700 bg-transparent text-stone-50 hover:bg-stone-800 hover:text-stone-50 active:scale-[0.98] transition-transform font-medium"
+                    onClick={() => openEducation(result.topType as 'anxious' | 'avoidant' | 'fearful' | 'secure')}
+                  >
+                    <BookOpen className="mr-2 h-5 w-5" />
+                    Learn this pattern
+                  </Button>
+                </div>
               </div>
 
               <Card className="rounded-[28px] border-none shadow-sm">
@@ -876,6 +923,23 @@ export default function ReRootedApp() {
                   <p className="text-base leading-7 text-stone-600">
                     {result.config.ritual}
                   </p>
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-[28px] border-none bg-gradient-to-br from-emerald-50 to-teal-50 shadow-sm">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-lg">Daily Check-In</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-base leading-7 text-stone-600">
+                    Take a moment to reflect on your relationship patterns today
+                  </p>
+                  <Button
+                    className="h-12 w-full rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-base font-medium shadow-md active:scale-[0.98] transition-transform"
+                    onClick={() => setScreen('checkin')}
+                  >
+                    Check In
+                  </Button>
                 </CardContent>
               </Card>
 
@@ -956,26 +1020,7 @@ export default function ReRootedApp() {
           )}
 
           {screen === 'progress' && (
-            <motion.div
-              key="progress"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              className="flex-1 space-y-5"
-            >
-              <Card className="rounded-[28px] border-none shadow-sm">
-                <CardHeader>
-                  <CardTitle>Progress</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm leading-6 text-stone-600">
-                  <p>
-                    This screen is ready for streaks, completed rituals,
-                    intimacy milestones, and repair wins.
-                  </p>
-                  <p>For a paid product, this is where retention lives.</p>
-                </CardContent>
-              </Card>
-            </motion.div>
+            <ProgressPage onBack={() => setScreen('dashboard')} />
           )}
 
           {screen === 'profile' && (
@@ -1066,6 +1111,64 @@ export default function ReRootedApp() {
                   </p>
                 </CardContent>
               </Card>
+            </motion.div>
+          )}
+
+          {screen === 'results' && (
+            <motion.div
+              key="results"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+            >
+              <ResultsPage
+                resultType={result.topType as 'anxious' | 'avoidant' | 'fearful' | 'secure'}
+                onBack={() => setScreen('dashboard')}
+                onViewActionPlan={() => setScreen('actionplan')}
+              />
+            </motion.div>
+          )}
+
+          {screen === 'actionplan' && (
+            <motion.div
+              key="actionplan"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+            >
+              <ActionPlanPage
+                resultType={result.topType as 'anxious' | 'avoidant' | 'fearful' | 'secure'}
+                onBack={() => setScreen('results')}
+              />
+            </motion.div>
+          )}
+
+          {screen === 'rituals' && (
+            <motion.div
+              key="rituals"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+            >
+              <ConnectionRitualsPage
+                attachmentType={result.topType as 'anxious' | 'avoidant' | 'fearful' | 'secure'}
+                onBack={() => setScreen('home')}
+              />
+            </motion.div>
+          )}
+
+          {screen === 'checkin' && (
+            <motion.div
+              key="checkin"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+            >
+              <CheckInPage
+                attachmentType={result.topType as 'anxious' | 'avoidant' | 'fearful' | 'secure'}
+                onBack={() => setScreen('dashboard')}
+                onComplete={handleCheckInComplete}
+              />
             </motion.div>
           )}
 
