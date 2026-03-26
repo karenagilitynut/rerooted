@@ -9,9 +9,11 @@ import { Badge } from '@/components/ui/badge';
 import { Heart, Sparkles, Shield, Chrome as Home, ClipboardList, ChartBar as BarChart3, User, BookOpen, ArrowLeft } from 'lucide-react';
 import ResultsPage from '@/components/ResultsPage';
 import ActionPlanPage from '@/components/ActionPlanPage';
-import CheckInPage, { CheckInResponses } from '@/components/CheckInPage';
+import ChatCheckIn, { type CheckInType } from '@/components/ChatCheckIn';
+import CheckInStateSelector from '@/components/CheckInStateSelector';
 import ProgressPage from '@/components/ProgressPage';
 import ConnectionRitualsPage from '@/components/ConnectionRitualsPage';
+import ProfilePage from '@/components/ProfilePage';
 import { createClient } from '@supabase/supabase-js';
 
 const attachmentQuestions = [
@@ -669,6 +671,7 @@ export default function ReRootedApp() {
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [selectedEducationType, setSelectedEducationType] = useState<'anxious' | 'avoidant' | 'fearful' | 'secure'>('anxious');
   const [isPremium, setIsPremium] = useState(false);
+  const [selectedCheckInType, setSelectedCheckInType] = useState<CheckInType>('charged');
 
   const quizProgress = Math.round(
     (Object.keys(answers).length / attachmentQuestions.length) * 100
@@ -712,22 +715,8 @@ export default function ReRootedApp() {
     setScreen('learn');
   };
 
-  const handleCheckInComplete = async (responses: CheckInResponses) => {
-    try {
-      await supabase.from('checkins').insert({
-        attachment_type: responses.attachmentType,
-        date: responses.date,
-        trigger: responses.trigger,
-        core_story: responses.coreStory,
-        reframe: responses.reframe,
-        identity_shift: responses.identityShift,
-        completed_at: responses.date
-      });
-      setScreen('dashboard');
-    } catch (error) {
-      console.error('Error saving check-in:', error);
-      setScreen('dashboard');
-    }
+  const handleCheckInComplete = () => {
+    setScreen('dashboard');
   };
 
   return (
@@ -817,7 +806,7 @@ export default function ReRootedApp() {
                 </Card>
                 <Card
                   className="rounded-[28px] border border-[#D8D2C8] shadow-sm active:scale-[0.98] transition-transform cursor-pointer bg-white"
-                  onClick={() => setScreen('checkin')}
+                  onClick={() => setScreen('checkin-select')}
                 >
                   <CardContent className="flex items-start gap-4 p-6">
                     <div className="rounded-2xl bg-[#7A8F7B]/10 p-3">
@@ -936,7 +925,7 @@ export default function ReRootedApp() {
                   </p>
                   <Button
                     className="h-12 w-full rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-base font-medium shadow-md active:scale-[0.98] transition-transform"
-                    onClick={() => setScreen('checkin')}
+                    onClick={() => setScreen('checkin-select')}
                   >
                     Check In
                   </Button>
@@ -954,7 +943,7 @@ export default function ReRootedApp() {
                 </CardContent>
               </Card>
 
-{!isPremium ? (
+              {!isPremium ? (
                 <Card className="rounded-[28px] border-none bg-gradient-to-br from-amber-50 to-orange-50 shadow-sm">
                   <CardHeader>
                     <div className="flex items-center gap-2">
@@ -1029,19 +1018,10 @@ export default function ReRootedApp() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
-              className="flex-1 space-y-5"
             >
-              <Card className="rounded-[28px] border-none shadow-sm">
-                <CardHeader>
-                  <CardTitle>Profile</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm leading-6 text-stone-600">
-                  <p>
-                    Add user accounts, saved quiz results, partner linking,
-                    subscription access, and settings here.
-                  </p>
-                </CardContent>
-              </Card>
+              <ProfilePage
+                attachmentType={result.topType as 'anxious' | 'avoidant' | 'fearful' | 'secure'}
+              />
             </motion.div>
           )}
 
@@ -1157,16 +1137,36 @@ export default function ReRootedApp() {
             </motion.div>
           )}
 
+          {screen === 'checkin-select' && (
+            <motion.div
+              key="checkin-select"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              className="flex-1 flex flex-col"
+            >
+              <CheckInStateSelector
+                onBack={() => setScreen('dashboard')}
+                onSelect={(type) => {
+                  setSelectedCheckInType(type);
+                  setScreen('checkin');
+                }}
+              />
+            </motion.div>
+          )}
+
           {screen === 'checkin' && (
             <motion.div
               key="checkin"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
+              className="flex-1 flex flex-col"
             >
-              <CheckInPage
+              <ChatCheckIn
                 attachmentType={result.topType as 'anxious' | 'avoidant' | 'fearful' | 'secure'}
-                onBack={() => setScreen('dashboard')}
+                checkInType={selectedCheckInType}
+                onBack={() => setScreen('checkin-select')}
                 onComplete={handleCheckInComplete}
               />
             </motion.div>
